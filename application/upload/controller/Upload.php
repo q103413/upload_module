@@ -104,23 +104,16 @@ class Upload extends Rest
        $tmpPath = $_FILES['file']['tmp_name'];
         // var_dump($tmpPath);
 
-        //检测uploadId
-        // $uploadModel = new FileUpload();
-        // $checkId = ['id'=>$uploadId];
-        // $uploadInfo = $uploadModel->getUploadInfo($checkId);
-        // if (empty($uploadInfo) ) {
-        //     $this->error('无效的uplaodId');
-        // }elseif ($uploadInfo['user_id'] != $this->userId) {
-        //     $this->error('用户与当前uploadId不对应');
-        // }
-        // var_dump($uploadInfo['id']);exit();
-        // $fileName = $this->filePath.'/'. $this->fileName.'__'.$this->blobNum;
         $this->filePath =  FILE_UPLOAD_PATH . date("Ymd") .'/'. $this->uploadInfo['id'] . '/';
-        // $this->touchDir();
+
+        if(!file_exists($this->filePath) )
+        {
+           $this->error('上传错误,文件夹不存在');
+        }
 
         $this->fileName = $this->filePath . $this->uploadInfo['file_name'].'__'.$partNumber;
         // var_dump($this->fileName);exit();
-         move_uploaded_file($tmpPath, $this->fileName);
+        move_uploaded_file($tmpPath, $this->fileName);
 
         $data['upload_id'] = $uploadId;
         $data['part_number']   = $partNumber;
@@ -129,7 +122,12 @@ class Upload extends Rest
         $data['status']   = 0;
 
         $fileUploadParts = new FileUploadParts();
-        $result = $fileUploadParts->addUploadparts($data);
+        $checkResult = $fileUploadParts->checkUploadpart($data);
+        if ($checkResult) {
+            $result = $fileUploadParts->editUploadpart($data);
+        }else{
+            $result = $fileUploadParts->addUploadpart($data);
+        }
         if (empty( $result) ) {
             $this->error('分片上传失败');
         }
@@ -147,7 +145,7 @@ class Upload extends Rest
 // var_dump($this->userId );exit();
         $validate = new Validate([
             'uploadId'          => 'require|integer',
-            'partList'          => 'require|array',
+            'partList'          => 'require',
         ]);
 
         $validate->message([
@@ -162,12 +160,12 @@ class Upload extends Rest
         //校验列表
         $fileUploadParts = new FileUploadParts();
         $finishPartList  = $fileUploadParts->getPartList($this->uploadInfo['id']);
-        
-        if ($params['partList'] != $finishPartList) {
+        // var_dump($params['partList'],$finishPartList);exit();
+        if ($finishPartList && $params['partList'] != json_encode( $finishPartList) ) {
             $this->error('分片列表有误');
         }
 
-       $finishPartNumber = array_column($finishPartList, 'partNumber');
+       $finishPartNumber = array_keys($finishPartList);
        //合并
        $this->filePath =  FILE_UPLOAD_PATH . date("Ymd") .'/'. $params['uploadId'] . '/';
        $this->fileName = $this->uploadInfo['file_name'];
