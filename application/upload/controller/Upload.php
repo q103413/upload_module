@@ -239,6 +239,7 @@ class Upload extends Rest
        $fileUploadParts = new FileUploadParts();
        $finishPartList  = $fileUploadParts->getPartList($this->uploadInfo['id']);
        
+       $responseData = ['ListPartsResult'=>$finishPartList];
        $this->success($finishPartList);
 
     }
