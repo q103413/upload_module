@@ -10,9 +10,6 @@
 // +----------------------------------------------------------------------
 
 // [ 应用入口文件 ]
-// 调试模式开关
-define("APP_DEBUG", true);
-
 // 定义应用目录
 define('APP_PATH', __DIR__ . '/../application/');
 define('FILE_UPLOAD_PATH', __DIR__ . '/upload/');
