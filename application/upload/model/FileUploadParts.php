@@ -13,10 +13,10 @@ class FileUploadParts extends Model
 		return $this->insert($data);
 	}
 
-	public function getPartList($userId='')
+	public function getPartList($uploadId='')
 	{
 		$fields = 'part_number as partNumber, part_etag as ETag';
-		return $this->field($fields)->where(['user_id'=>$userId])->select();
+		return $this->field($fields)->where(['upload_id'=>$uploadId])->select();
 	}
 
 }

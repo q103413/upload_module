@@ -46,10 +46,12 @@ class Upload extends Rest
 
         $data['user_id'] = $this->userId;
         $data['file_name'] = $params['fileName'];
-        $checkResult = $uploadModel->checkUploadId($data);
-        if ($checkResult) {
-            $uploadId = ['uploadId'=>$checkResult];
-            $this->error('文件重复上传',$uploadId);
+        $uploadId = $uploadModel->checkUploadId($data);
+        if ($uploadId) {
+            $repeatUploadId = ['uploadId'=>$uploadId];
+            $this->filePath = FILE_UPLOAD_PATH . date("Ymd") .'/'. $uploadId . '/';
+            $this->touchDir();
+            $this->error('文件重复上传',$repeatUploadId);
         }
         $data['create_time'] = time();
         $data['status'] = 0;
@@ -122,7 +124,7 @@ class Upload extends Rest
 
         $data['upload_id'] = $uploadId;
         $data['part_number']   = $partNumber;
-        $data['part_etag']   = md5_file($tmpPath);
+        $data['part_etag']   = md5_file($this->fileName);
         $data['create_time']   = time();
         $data['status']   = 0;
 
@@ -159,7 +161,7 @@ class Upload extends Rest
 
         //校验列表
         $fileUploadParts = new FileUploadParts();
-        $finishPartList  = $fileUploadParts->getPartList($this->userId);
+        $finishPartList  = $fileUploadParts->getPartList($this->uploadInfo['id']);
         
         if ($params['partList'] != $finishPartList) {
             $this->error('分片列表有误');
@@ -225,22 +227,40 @@ class Upload extends Rest
     //举已上传的分片
     public function listParts($value='')
     {
-        // $list = scandir('./');
-    	# code...
+        $params = input('post.');
+       // var_dump($this->userId );exit();
+       $validate = new Validate([
+           'uploadId'          => 'require|integer',
+       ]);
+
+       $validate->message([
+           'uploadId.require'          => '上传id不能为空!',
+       ]);
+
+       if (!$validate->check($params)) {
+           $this->error($validate->getError());
+       }
+
+       //校验列表
+       $fileUploadParts = new FileUploadParts();
+       $finishPartList  = $fileUploadParts->getPartList($this->uploadInfo['id']);
+       
+       $this->success($finishPartList);
+
     }
 
     //列举分片上传事件
-    public function listMultipartUploads($value='')
-    {
-    	# code...
-    }
+    // public function listMultipartUploads($value='')
+    // {
+    // 	# code...
+    // }
 
     //建立上传文件夹
     private function touchDir(){
         // var_dump( $this->filePath );exit();
         if(!file_exists($this->filePath)){
             // var_dump($this->filePath);exit();
-            return mkdir($this->filePath);
+            return mkdir($this->filePath,0777,true);
         }
     }
 }
