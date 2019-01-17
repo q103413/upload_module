@@ -1,5 +1,5 @@
 <?php
-namespace app\index\controller;
+namespace app\upload\controller;
 
 class Index
 {

@@ -10,23 +10,6 @@
 // +----------------------------------------------------------------------
 
 // 应用公共文件
-/**
- * 封装返回值
- * @param $errorCode
- * @param $data
- * @return array
- */
-function return_result($errorCode, $msg='', $data = [] ) {
-    $response = json_encode( [
-        'errorcode' => $errorCode,
-        // 'message'   => Config::pull('errorcode')[$errorCode],
-        'message'   => $msg,
-        'data'      => $data
-    ]);
-
-    return $response;
-}
-
 
 /**
  * 递归数组，下划线转驼峰函数；eg: go_to_school => goToSchool
@@ -63,4 +46,34 @@ function output_format($data, $valFormat = false)
         }
     }
     return $formatData;
+}
+
+//用户中心
+function curl_user($url, $data=[],$header='')
+{
+    $curl = curl_init();
+    curl_setopt($curl, CURLOPT_URL, $url);
+    curl_setopt($curl, CURLOPT_HTTPHEADER, $header );
+    curl_setopt($curl, CURLOPT_HEADER, 0);
+    curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+    // curl_setopt($curl, CURLOPT_USERPWD, $hashPincode);
+    curl_setopt($curl, CURLOPT_TIMEOUT, 15);
+    curl_setopt($curl, CURLOPT_POST, true);
+    curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+    if(stripos($url,"https://")!==FALSE){
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, FALSE);
+        curl_setopt($curl, CURLOPT_SSLVERSION, 1); //CURL_SSLVERSION_TLSv1
+    }
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+
+    $sContent = curl_exec($curl);
+    $aStatus = curl_getinfo($curl);
+    curl_close($curl);
+    // dump(json_decode($sContent));
+    if(intval($aStatus["http_code"])==200){
+        return $sContent;
+    }else{
+        return false;
+    }
 }
