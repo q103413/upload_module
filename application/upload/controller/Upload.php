@@ -177,18 +177,14 @@ class Upload extends Rest
             // }
        }
        file_put_contents( FILE_UPLOAD_PATH . date("Ymd").'/'. $this->fileName,$blob);
-
+       //删除合并后的分片
+       $uploadModel = new FileUpload();
+       $uploadModel->changeUploadStatus($this->uploadInfo['id']);
+       // $this->deleteFileParts();
+       del_dir($this->filePath);
+       $delFileParts  = $fileUploadParts->delFileParts($this->uploadInfo['id']);
        $this->success();
-       // $this->deleteFileBlob();
-        // if($this->blobNum == $this->totalBlobNum){
-        //     $blob = '';
-        //     for($i=1; $i<= $this->totalBlobNum; $i++){
-        //         $blob .= file_get_contents($this->filepath.'/'. $this->fileName.'__'.$i);
-        //     }
-        //     file_put_contents($this->filepath.'/'. $this->fileName,$blob);
-        //    $this->deleteFileBlob();
-        // }      
-          
+
     	// $byte = filesize($tmpPath);
      //    $kb = round($byte / 1024, 2);
      //    if ($kb<100) {
@@ -261,4 +257,11 @@ class Upload extends Rest
             return mkdir($this->filePath,0777,true);
         }
     }
+
+    //删除文件块
+     // private function deleteFileParts(){
+     //     for($i=1; $i<= $this->totalBlobNum; $i++){
+     //         @unlink($this->filepath.'/'. $this->fileName.'__'.$i);
+     //     }
+     // }
 }

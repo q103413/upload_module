@@ -23,4 +23,11 @@ class FileUpload extends Model
 		return $this->where($data)->find();
 	}
 
+	public function changeUploadStatus($uploadId='')
+	{
+		$where ['id'] = $uploadId;
+		$data['status'] = 1;
+		return  $this->where($where)->update($data);
+	}
+
 }

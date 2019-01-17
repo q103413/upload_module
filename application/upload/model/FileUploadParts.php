@@ -35,4 +35,10 @@ class FileUploadParts extends Model
 
 		return $res;
 	}
+
+	public function delFileParts($uploadId='')
+	{
+		$where ['upload_id'] = $uploadId;
+		return $this->where($where)->delete();
+	}
 }
