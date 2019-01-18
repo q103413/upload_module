@@ -30,4 +30,10 @@ class FileUpload extends Model
 		return  $this->where($where)->update($data);
 	}
 
+	public function delUploadId($uploadId='')
+	{
+		$where ['id'] = $uploadId;
+		return $this->where($where)->delete();
+	}
+
 }

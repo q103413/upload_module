@@ -215,13 +215,32 @@ class Upload extends Rest
     //您可以调用$ossClient->abortMultipartUpload方法来取消分片上传事件。当一个分片上传事件被取消后，无法再使用这个uploadId做任何操作，已经上传的分片数据会被删除。
     public function abortMultipartUpload($value='')
     {
-    	//删除合并后的分片
-         // $uploadModel = new FileUpload();
-         // $uploadModel->changeUploadStatus($this->uploadInfo['id']);
-         // // $this->deleteFileParts();
-         // del_dir($this->filePath);
-         // $delFileParts  = $fileUploadParts->delFileParts($this->uploadInfo['id']);
-         // $this->success();
+        $params = input('post.');
+        // var_dump($this->userId );exit();
+        $validate = new Validate([
+            'uploadId'          => 'require|integer',
+        ]);
+
+        $validate->message([
+            'uploadId.require'          => '上传id不能为空!',
+        ]);
+
+        if (!$validate->check($params)) {
+            $this->error($validate->getError());
+        }
+
+        $this->filePath =  FILE_UPLOAD_PATH . date("Ymd") .'/'. $this->uploadInfo['id'] . '/';
+       
+        //删除分片文件夹
+        del_dir($this->filePath);
+
+        $uploadModel = new FileUpload();
+        $uploadModel->delUploadId($this->uploadInfo['id']);
+
+        $fileUploadParts = new FileUploadParts();
+        $fileUploadParts->delFileParts($this->uploadInfo['id']);
+
+        $this->success();
     }
 
     //举已上传的分片
@@ -249,6 +268,8 @@ class Upload extends Rest
        $this->success($finishPartList);
 
     }
+
+
 
     //列举分片上传事件
     // public function listMultipartUploads($value='')
