@@ -48,10 +48,10 @@ class Upload extends Rest
         $data['file_name'] = $params['fileName'];
         $uploadId = $uploadModel->checkUploadId($data);
         if ($uploadId) {
-            $repeatUploadId = ['uploadId'=>$uploadId];
+            $responseData = ['uploadId'=>$uploadId];
             $this->filePath = FILE_UPLOAD_PATH . date("Ymd") .'/'. $uploadId . '/';
             $this->touchDir();
-            $this->error('文件重复上传',$repeatUploadId);
+            $this->success($responseData);
         }
         $data['create_time'] = time();
         $data['status'] = 0;
@@ -215,7 +215,13 @@ class Upload extends Rest
     //您可以调用$ossClient->abortMultipartUpload方法来取消分片上传事件。当一个分片上传事件被取消后，无法再使用这个uploadId做任何操作，已经上传的分片数据会被删除。
     public function abortMultipartUpload($value='')
     {
-    	# code...
+    	//删除合并后的分片
+         // $uploadModel = new FileUpload();
+         // $uploadModel->changeUploadStatus($this->uploadInfo['id']);
+         // // $this->deleteFileParts();
+         // del_dir($this->filePath);
+         // $delFileParts  = $fileUploadParts->delFileParts($this->uploadInfo['id']);
+         // $this->success();
     }
 
     //举已上传的分片
