@@ -75,11 +75,11 @@ abstract class Rest
             $this->error($result['msg']);
         }
 
-        if (empty($result['data']['userId']) ) {
+        if (empty($result['data']['uid']) ) {
             $this->error('用戶id错误');
         }
 
-         return $result['data']['userId'];
+         return $result['data']['uid'];
 
          // return 1;
     }
