@@ -81,8 +81,8 @@ class Upload extends Rest
         $params = input('post.');
 // var_dump($this->userId );exit();
         $validate = new Validate([
-            'uploadId|integer'          => 'require',
-            'partNumber|integer'          => 'require',
+            'uploadId'          => 'require|integer',
+            'partNumber'          => 'require|integer',
         ]);
 
         $validate->message([
@@ -108,7 +108,7 @@ class Upload extends Rest
 
         if(!file_exists($this->filePath) )
         {
-           $this->error('上传错误,文件夹不存在');
+           $this->error('上传错误,请先初始化');
         }
 
         $this->fileName = $this->filePath . $this->uploadInfo['file_name'].'__'.$partNumber;
