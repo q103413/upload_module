@@ -160,8 +160,14 @@ class Upload extends Rest
         //校验列表
         $fileUploadParts = new FileUploadParts();
         $finishPartList  = $fileUploadParts->getPartList($this->uploadInfo['id']);
-        // var_dump($params['partList'],$finishPartList);exit();
-        if ($finishPartList && $params['partList'] != json_encode( $finishPartList) ) {
+        if ( empty($finishPartList) ) {
+            $this->error('分片列表为空');
+        }
+        $compareString = '';
+        foreach ($finishPartList as $key => $value) {
+            $compareString = $compareString . $key . ':' . $value .',';
+        }
+        if (  $params['partList'] != $compareString ) {
             $this->error('分片列表有误');
         }
 
