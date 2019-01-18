@@ -41,7 +41,7 @@ abstract class Rest
     {
         // 资源类型检测
         $request = Request::instance();
-        $token = $request->header('user-token');
+        $token = $request->header('Auth-Token');
         $this->userId = $this->initUser($token);
         $ext     = $request->ext();
         if ('' == $ext) {

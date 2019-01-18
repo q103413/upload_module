@@ -24,7 +24,7 @@ class Security {
         // $params = $request->param();//获取所有参数，最全
     //     $get = $request->get();获取get上传的内容
         $postParams = $request->post();//获取post上传的内容
-        $token = $request->header('user-token');
+        // $token = $request->header('user-token');
         // $request->file('file')获取文件
         //校验是否登录
         // $header = array('Content-Type: application/json');
