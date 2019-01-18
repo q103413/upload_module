@@ -72,16 +72,16 @@ abstract class Rest
 
         $result = json_decode( $result, 'true');
         if ($result['code'] != 0) {
-            // $this->error($result['msg']);
+            $this->error($result['msg']);
         }
 
         if (empty($result['data']['userId']) ) {
-            // $this->error('用戶id错误');
+            $this->error('用戶id错误');
         }
 
-         // return $result['data']['userId'];
+         return $result['data']['userId'];
 
-         return 1;
+         // return 1;
     }
 
     /**
