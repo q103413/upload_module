@@ -189,7 +189,8 @@ class Upload extends Rest
         $finishPartNumber = array_keys($finishPartList);
         $missParts = find_miss($finishPartNumber, $this->uploadInfo['total_parts']);
         if (!empty($missParts) ) {
-            $this->error('分片数量缺少', $missParts);
+            $responseData = ['missParts' => $missParts];
+            $this->error('分片数量缺少', $responseData);
         }else if ($totalParts != $this->uploadInfo['total_parts']) {
            $this->error('分片数量不对', $missParts);
        }else if($totalSize != $this->uploadInfo['total_size']) {
