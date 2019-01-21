@@ -31,6 +31,8 @@ class Upload extends Rest
         $params = input('post.');
         $validate = new Validate([
             'fileName'          => 'require',
+            'totalParts'        => 'require|integer',
+            'totalSize'         => 'require|integer',
             'title'             => 'require',
             'description'       => 'require',
             'tags'              => 'require',
@@ -38,6 +40,10 @@ class Upload extends Rest
 
         $validate->message([
             'fileName.require'          => '上传文件名不能为空!',
+            'totalParts.require'          => '分片数量不能为空!',
+            'totalParts.integer'          => '分片数量必须是整数!',
+            'totalSize.require'          => '总大小不能为空!',
+            'totalSize.integer'          => '总字节数必须是整数!',
             'title.require'             => '视频标题不能为空!',
             'description.require'       => '视频描述不能为空!',
             'tags.require'              => '视频标签不能为空!',
@@ -62,6 +68,8 @@ class Upload extends Rest
         $data['title']       = $params['title'];
         $data['description'] = $params['description'];
         $data['tags']        = $params['tags'];
+        $data['total_parts']  = $params['totalParts'];
+        $data['total_size']   = $params['totalSize'];
         $data['stars']       = input('post.stars/s','');;
         $data['create_time'] = time();
         $data['status']      = 0;
