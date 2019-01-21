@@ -102,3 +102,15 @@ function del_dir($path){
 
     @rmdir($path.'/');
 }
+
+function find_miss($finishArray, $max)
+{
+    $allArray = [];
+    for ($i=1; $i <= $max; $i++) { 
+        $allArray[] = $i;
+    }
+
+    $missArray = array_values(array_diff($allArray, $finishArray) );
+
+    return $missArray;
+}

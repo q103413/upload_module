@@ -131,10 +131,12 @@ class Upload extends Rest
 
         $this->fileName = $this->filePath . $this->uploadInfo['file_name'].'__'.$partNumber;
         // var_dump($this->fileName);exit();
+        $fileByte = filesize($tmpPath);
         move_uploaded_file($tmpPath, $this->fileName);
 
         $data['upload_id'] = $uploadId;
         $data['part_number']   = $partNumber;
+        $data['part_size']   = $fileByte;
         $data['part_etag']   = md5_file($this->fileName);
         $data['create_time']   = time();
         $data['status']   = 0;
@@ -151,7 +153,10 @@ class Upload extends Rest
         }
 
         // $responseData['partNumber']   = $partNumber;
-        $responseData['ETag']   = $data['part_etag'];
+        $responseData['ETag']       = $data['part_etag'];
+        $responseData['partSize']   = $fileByte;
+        $responseData['partNumber'] = $partNumber;
+        $responseData['uploadId']   = $uploadId;
         $this->success($responseData);
     }
 
@@ -160,15 +165,14 @@ class Upload extends Rest
     public function completeMultipartUpload($value='')
     {
         $params = input('post.');
-// var_dump($this->userId );exit();
         $validate = new Validate([
             'uploadId'          => 'require|integer',
-            'partList'          => 'require',
+            // 'partList'          => 'require',
         ]);
 
         $validate->message([
             'uploadId.require'          => '上传id不能为空!',
-            'partList.require'          => '分片列表不能为空!',
+            // 'partList.require'          => '分片列表不能为空!',
         ]);
 
         if (!$validate->check($params)) {
@@ -177,34 +181,33 @@ class Upload extends Rest
 
         //校验列表
         $fileUploadParts = new FileUploadParts();
-        $finishPartList  = $fileUploadParts->getPartList($this->uploadInfo['id']);
-        if ( empty($finishPartList) ) {
-            $this->error('分片列表为空');
-        }
-        $compareString = '';
-        foreach ($finishPartList as $key => $value) {
-            $compareString = $compareString . $key . ':' . $value .',';
-        }
-        if (  $params['partList'] != $compareString ) {
-            $this->error('分片列表有误');
-        }
+        $finishPartInfo  = $fileUploadParts->getPartsInfo($this->uploadInfo['id']);
+        $totalParts = $finishPartInfo['totalParts'];
+        $totalSize = $finishPartInfo['totalSize'];
 
-       $finishPartNumber = array_keys($finishPartList);
+        $finishPartList  = $fileUploadParts->getPartList($this->uploadInfo['id']);
+        $finishPartNumber = array_keys($finishPartList);
+        $missParts = find_miss($finishPartNumber, $this->uploadInfo['total_parts']);
+        if (!empty($missParts) ) {
+            $this->error('分片数量缺少', $missParts);
+        }else if ($totalParts != $this->uploadInfo['total_parts']) {
+           $this->error('分片数量不对', $missParts);
+       }else if($totalSize != $this->uploadInfo['total_size']) {
+           $this->error('分片大小不对');
+       }
+
        //合并
        $this->filePath =  FILE_UPLOAD_PATH . date("Ymd") .'/'. $params['uploadId'] . '/';
        $this->fileName = $this->uploadInfo['file_name'];
 
        $blob = '';
        foreach ($finishPartNumber as $key => $number) {
-            // for($i=1; $i<= $this->totalBlobNum; $i++){
-                $blob .= file_get_contents($this->filePath.'/'. $this->fileName.'__'.$number);
-            // }
+            $blob .= file_get_contents($this->filePath.'/'. $this->fileName.'__'.$number);
        }
        file_put_contents( FILE_UPLOAD_PATH . date("Ymd").'/'. $this->fileName,$blob);
        //删除合并后的分片
        $uploadModel = new FileUpload();
        $uploadModel->changeUploadStatus($this->uploadInfo['id']);
-       // $this->deleteFileParts();
        del_dir($this->filePath);
        $delFileParts  = $fileUploadParts->delFileParts($this->uploadInfo['id']);
        $this->success();
@@ -310,7 +313,7 @@ class Upload extends Rest
         }
     }
 
-    //删除文件块
+     //删除文件块
      // private function deleteFileParts(){
      //     for($i=1; $i<= $this->totalBlobNum; $i++){
      //         @unlink($this->filepath.'/'. $this->fileName.'__'.$i);

@@ -30,9 +30,16 @@ class FileUploadParts extends Model
 
 	public function getPartList($uploadId='')
 	{
-		$fields = 'part_number as partNumber, part_etag as ETag';
+		$fields = 'part_number as partNumber, part_size as partSize';
 		$res = $this->where(['upload_id'=>$uploadId])->column($fields);
 
+		return $res;
+	}
+
+	public function getPartsInfo($uploadId='')
+	{
+		$fields = 'count(id) as totalParts, SUM(part_size) as totalSize';
+		$res = $this->where(['upload_id'=>$uploadId])->field($fields)->find();
 		return $res;
 	}
 
