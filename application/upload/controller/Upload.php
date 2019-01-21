@@ -31,10 +31,16 @@ class Upload extends Rest
         $params = input('post.');
         $validate = new Validate([
             'fileName'          => 'require',
+            'title'             => 'require',
+            'description'       => 'require',
+            'tags'              => 'require',
         ]);
 
         $validate->message([
             'fileName.require'          => '上传文件名不能为空!',
+            'title.require'             => '视频标题不能为空!',
+            'description.require'       => '视频描述不能为空!',
+            'tags.require'              => '视频标签不能为空!',
         ]);
 
         if (!$validate->check($params)) {
@@ -44,8 +50,8 @@ class Upload extends Rest
     	//开辟数据库
     	$uploadModel = new FileUpload();
 
-        $data['user_id'] = $this->userId;
-        $data['file_name'] = $params['fileName'];
+        $data['user_id']    = $this->userId;
+        $data['file_name']  = $params['fileName'];
         $uploadId = $uploadModel->checkUploadId($data);
         if ($uploadId) {
             $responseData = ['uploadId'=>$uploadId];
@@ -53,8 +59,12 @@ class Upload extends Rest
             $this->touchDir();
             $this->success($responseData);
         }
+        $data['title']       = $params['title'];
+        $data['description'] = $params['description'];
+        $data['tags']        = $params['tags'];
+        $data['stars']       = input('post.stars/s','');;
         $data['create_time'] = time();
-        $data['status'] = 0;
+        $data['status']      = 0;
         // exit();
         $result = $uploadModel->addUpload($data);
     	//开辟缓存
