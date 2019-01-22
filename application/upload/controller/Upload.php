@@ -73,7 +73,7 @@ class Upload extends Rest
         $validate = new Validate([
             'fileName'          => 'require',
             'totalParts'        => 'require|integer',
-            'totalSize'         => 'require|integer|between:1,2147483648',
+            'totalSize'         => 'require|integer|between:1,'.MAX_UPLOAD_FILE_SIZE,
         ]);
 
         $validate->message([
