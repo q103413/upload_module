@@ -51,12 +51,12 @@ class Upload extends Rest
         //校验是否上传成功
         $checkId = [ 'id'=>$params['uploadId'] ];
         $uploadInfo = $uploadModel->getUploadInfo($checkId);
-        if ($uploadInfo['status'] != UPLOAD_NO_INFO) {
-            $this->error('上传文件状态不对');
+        if ($uploadInfo['status'] >= UPLOAD_WAIT_VERIFY) {
+            $this->error('已经添加过视频信息');
         }
         // var_dump($uploadInfo);exit();
 
-        $data['user_id']     = $this->userId;
+        // $data['user_id']     = $this->userId;
         $data['id']          = $params['uploadId'];
         $data['title']       = $params['title'];
         $data['description'] = $params['description'];

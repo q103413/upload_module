@@ -32,7 +32,7 @@ class FileUpload extends Model
 	public function changeUploadStatus($uploadId='')
 	{
 		$where ['id'] = $uploadId;
-		$data['status'] = UPLOAD_NO_INFO;
+		$data['status'] = UPLOAD_FINISH_NO_INFO;
 		$data['finish_time'] = time();
 		return  $this->where($where)->update($data);
 	}
@@ -46,7 +46,7 @@ class FileUpload extends Model
 	public function editVideoInfo($data='')
 	{
 		$where ['id'] = $data['id'];
-		// $data['status'] = UPLOAD_NO_INFO;
+		// $data['status'] = UPLOAD_FINISH_NO_INFO;
 		return  $this->where($where)->update($data);
 	}
 
