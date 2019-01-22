@@ -73,7 +73,7 @@ class Upload extends Rest
         $validate = new Validate([
             'fileName'          => 'require',
             'totalParts'        => 'require|integer',
-            'totalSize'         => 'require|integer',
+            'totalSize'         => 'require|integer|between:1,2147483648',
         ]);
 
         $validate->message([
@@ -82,6 +82,7 @@ class Upload extends Rest
             'totalParts.integer'          => '分片数量必须是整数!',
             'totalSize.require'          => '总大小不能为空!',
             'totalSize.integer'          => '总字节数必须是整数!',
+            'totalSize.between'          => '文件不能超过2G!',
         ]);
 
         if (!$validate->check($params)) {
