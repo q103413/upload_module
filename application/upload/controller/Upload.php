@@ -19,11 +19,8 @@ class Upload extends Rest
         //校验uploadId有效性
         $this->checkAuth();
         // $this->tmpPath =  $tmpPath;
-        // $this->blobNum =  $blobNum;
-        
-        // $this->moveFile();
-        // $this->fileMerge();
     }
+
     //添加视频信息
     public function addVideoInfo($value='')
     {
@@ -77,9 +74,6 @@ class Upload extends Rest
             'fileName'          => 'require',
             'totalParts'        => 'require|integer',
             'totalSize'         => 'require|integer',
-            // 'title'             => 'require',
-            // 'description'       => 'require',
-            // 'tags'              => 'require',
         ]);
 
         $validate->message([
@@ -88,9 +82,6 @@ class Upload extends Rest
             'totalParts.integer'          => '分片数量必须是整数!',
             'totalSize.require'          => '总大小不能为空!',
             'totalSize.integer'          => '总字节数必须是整数!',
-            // 'title.require'             => '视频标题不能为空!',
-            // 'description.require'       => '视频描述不能为空!',
-            // 'tags.require'              => '视频标签不能为空!',
         ]);
 
         if (!$validate->check($params)) {
@@ -109,14 +100,16 @@ class Upload extends Rest
             $this->touchDir();
             $this->success($responseData);
         }
-        // $data['title']       = $params['title'];
-        // $data['description'] = $params['description'];
-        // $data['tags']        = $params['tags'];
+
+        $fileNameNew = md5($params['fileName']).'.'.pathinfo($params['fileName'],PATHINFO_EXTENSION);
+
         $data['total_parts']  = $params['totalParts'];
         $data['total_size']   = $params['totalSize'];
-        // $data['stars']       = input('post.stars/s','');;
-        $data['create_time'] = time();
-        $data['status']      = UPLOAD_UNFINISHED;
+        $data['create_time']  = time();
+        $data['status']       = UPLOAD_UNFINISHED;
+        $data['file_name_new']    = $fileNameNew;
+        $data['file_path']    = FILE_UPLOAD_PATH . date("Ymd") .'/';
+        // var_dump($data );exit();
         // exit();
         $result = $uploadModel->addUpload($data);
     	//开辟缓存
@@ -158,7 +151,7 @@ class Upload extends Rest
         
         $uploadId = $params['uploadId'];
         $partNumber = $params['partNumber'];
-
+// var_dump($_FILES['file']['tmp_name']);exit();
         if (empty($_FILES['file']['tmp_name']) ) {
             $this->error('上传分片不能为空');
         }
