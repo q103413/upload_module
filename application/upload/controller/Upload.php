@@ -358,6 +358,68 @@ class Upload extends Rest
         }
     }
 
+    public function mergeUploadParts($value='')
+    {
+        $params = input('post.');
+        $validate = new Validate([
+            'uploadId'          => 'require|integer',
+            // 'partList'          => 'require',
+        ]);
+
+        $validate->message([
+            'uploadId.require'          => '上传id不能为空!',
+            // 'partList.require'          => '分片列表不能为空!',
+        ]);
+
+        if (!$validate->check($params)) {
+            $this->error($validate->getError());
+        }
+
+        //校验列表
+        $fileUploadParts = new FileUploadParts();
+        $finishPartInfo  = $fileUploadParts->getPartsInfo($this->uploadInfo['id']);
+        $finishTotalParts = $finishPartInfo['totalParts'];
+        $totalSize = $finishPartInfo['totalSize'];
+
+        $finishPartList  = $fileUploadParts->getPartList($this->uploadInfo['id']);
+        $finishPartNumber = array_keys($finishPartList);
+        $missParts = find_miss($finishPartNumber, $this->uploadInfo['total_parts']);
+        if (!empty($missParts) ) {
+            $responseData = ['missParts' => $missParts];
+            $this->error('分片数量缺少', $responseData);
+        }else if ($finishTotalParts != $this->uploadInfo['total_parts']) {
+            $responseData = ['finishParts' => $finishTotalParts, 'totalParts'=> $this->uploadInfo['total_parts'] ];
+           $this->error('分片数量不对', $responseData);
+       }else if($totalSize != $this->uploadInfo['total_size']) {
+            $responseData = ['finishSize' => $totalSize, 'totalSize'=> $this->uploadInfo['total_size'] ];
+           $this->error('分片大小不对', $responseData);
+       }
+// var_dump($totalSize, $this->uploadInfo['total_size']);exit();
+       //合并
+       $this->filePath =  FILE_UPLOAD_PATH . date("Ymd") .'/'. $params['uploadId'] . '/';
+       $this->fileName = $this->uploadInfo['file_name'];
+
+       $blob = '';
+       foreach ($finishPartNumber as $key => $number) {
+            $blob .= file_get_contents($this->filePath.'/'. $this->fileName.'__'.$number);
+       }
+       file_put_contents( FILE_UPLOAD_PATH . date("Ymd").'/'. $this->fileName,$blob);
+       //删除合并后的分片
+       $uploadModel = new FileUpload();
+       $uploadModel->changeUploadStatus($this->uploadInfo['id']);
+       // del_dir($this->filePath);
+       // $delFileParts  = $fileUploadParts->delFileParts($this->uploadInfo['id']);
+       $this->success();
+
+        // $byte = filesize($tmpPath);
+     //    $kb = round($byte / 1024, 2);
+     //    if ($kb<100) {
+     //        $this->error('上传分片不能小于100k');
+     //    }
+        // echo $byte,'qq',$kb;exit();
+
+    }
+
      //删除文件块
      // private function deleteFileParts(){
      //     for($i=1; $i<= $this->totalBlobNum; $i++){
