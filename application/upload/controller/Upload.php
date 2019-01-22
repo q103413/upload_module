@@ -89,6 +89,11 @@ class Upload extends Rest
             $this->error($validate->getError());
         }
 
+        $ext = pathinfo($params['fileName'],PATHINFO_EXTENSION);
+        if (empty($ext) ){
+            $this->error('请填写正确的文件名');
+        }
+
     	//开辟数据库
     	$uploadModel = new FileUpload();
 
@@ -102,8 +107,8 @@ class Upload extends Rest
             $this->success($responseData);
         }
 
-        $fileNameNew = md5($params['fileName']).'.'.pathinfo($params['fileName'],PATHINFO_EXTENSION);
-
+        $fileNameNew = md5( time().'_'.$this->userId.'_'.mt_rand().'_'.$params['fileName']).'.'.$ext;
+        // var_dump( $fileNameNew );exit();
         $data['total_parts']  = $params['totalParts'];
         $data['total_size']   = $params['totalSize'];
         $data['create_time']  = time();
