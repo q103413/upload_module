@@ -26,7 +26,7 @@ class FileUpload extends Model
 	public function changeUploadStatus($uploadId='')
 	{
 		$where ['id'] = $uploadId;
-		$data['status'] = 1;
+		$data['status'] = UPLOAD_NO_INFO;
 		return  $this->where($where)->update($data);
 	}
 

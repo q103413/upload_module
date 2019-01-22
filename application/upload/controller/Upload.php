@@ -24,6 +24,44 @@ class Upload extends Rest
         // $this->moveFile();
         // $this->fileMerge();
     }
+    //添加视频信息
+    public function addVideoInfo($value='')
+    {
+        $params = input('post.');
+        $validate = new Validate([
+            'uploadId'          => 'require|integer',
+            'title'             => 'require',
+            'description'       => 'require',
+            'tags'              => 'require',
+        ]);
+
+        $validate->message([
+            'uploadId.require'          => '初始化id不能为空!',
+            'uploadId.integer'          => '初始化id必须是整数!',
+            'title.require'             => '视频标题不能为空!',
+            'description.require'       => '视频描述不能为空!',
+            'tags.require'              => '视频标签不能为空!',
+        ]);
+
+        if (!$validate->check($params)) {
+            $this->error($validate->getError());
+        }
+
+        $uploadModel = new FileUpload();
+
+        $data['user_id']     = $this->userId;
+        $data['id']          = $params['uploadId'];
+        $data['title']       = $params['title'];
+        $data['description'] = $params['description'];
+        $data['tags']        = $params['tags'];
+        $data['stars']       = input('post.stars/s','');;
+        $data['create_time'] = time();
+        $data['status']      = UPLOAD_WAIT_VERIFY;
+        // exit();
+        $result = $uploadModel->addUpload($data);
+
+        $this->success();
+    }
 
 	//调用$ossClient->initiateMultipartUpload方法返回OSS创建的全局唯一的uploadId。
     public function initiateMultipartUpload()
@@ -33,9 +71,9 @@ class Upload extends Rest
             'fileName'          => 'require',
             'totalParts'        => 'require|integer',
             'totalSize'         => 'require|integer',
-            'title'             => 'require',
-            'description'       => 'require',
-            'tags'              => 'require',
+            // 'title'             => 'require',
+            // 'description'       => 'require',
+            // 'tags'              => 'require',
         ]);
 
         $validate->message([
@@ -44,9 +82,9 @@ class Upload extends Rest
             'totalParts.integer'          => '分片数量必须是整数!',
             'totalSize.require'          => '总大小不能为空!',
             'totalSize.integer'          => '总字节数必须是整数!',
-            'title.require'             => '视频标题不能为空!',
-            'description.require'       => '视频描述不能为空!',
-            'tags.require'              => '视频标签不能为空!',
+            // 'title.require'             => '视频标题不能为空!',
+            // 'description.require'       => '视频描述不能为空!',
+            // 'tags.require'              => '视频标签不能为空!',
         ]);
 
         if (!$validate->check($params)) {
@@ -65,14 +103,14 @@ class Upload extends Rest
             $this->touchDir();
             $this->success($responseData);
         }
-        $data['title']       = $params['title'];
-        $data['description'] = $params['description'];
-        $data['tags']        = $params['tags'];
+        // $data['title']       = $params['title'];
+        // $data['description'] = $params['description'];
+        // $data['tags']        = $params['tags'];
         $data['total_parts']  = $params['totalParts'];
         $data['total_size']   = $params['totalSize'];
-        $data['stars']       = input('post.stars/s','');;
+        // $data['stars']       = input('post.stars/s','');;
         $data['create_time'] = time();
-        $data['status']      = 0;
+        $data['status']      = UPLOAD_UNFINISHED;
         // exit();
         $result = $uploadModel->addUpload($data);
     	//开辟缓存
@@ -139,7 +177,7 @@ class Upload extends Rest
         $data['part_size']   = $fileByte;
         $data['part_etag']   = md5_file($this->fileName);
         $data['create_time']   = time();
-        $data['status']   = 0;
+        $data['status']   = UPLOAD_UNFINISHED;
 
         $fileUploadParts = new FileUploadParts();
         $checkResult = $fileUploadParts->checkUploadpart($data);
@@ -182,7 +220,7 @@ class Upload extends Rest
         //校验列表
         $fileUploadParts = new FileUploadParts();
         $finishPartInfo  = $fileUploadParts->getPartsInfo($this->uploadInfo['id']);
-        $totalParts = $finishPartInfo['totalParts'];
+        $finishTotalParts = $finishPartInfo['totalParts'];
         $totalSize = $finishPartInfo['totalSize'];
 
         $finishPartList  = $fileUploadParts->getPartList($this->uploadInfo['id']);
@@ -191,12 +229,14 @@ class Upload extends Rest
         if (!empty($missParts) ) {
             $responseData = ['missParts' => $missParts];
             $this->error('分片数量缺少', $responseData);
-        }else if ($totalParts != $this->uploadInfo['total_parts']) {
-           $this->error('分片数量不对', $missParts);
+        }else if ($finishTotalParts != $this->uploadInfo['total_parts']) {
+            $responseData = ['finishParts' => $finishTotalParts, 'totalParts'=> $this->uploadInfo['total_parts'] ];
+           $this->error('分片数量不对', $responseData);
        }else if($totalSize != $this->uploadInfo['total_size']) {
-           $this->error('分片大小不对');
+            $responseData = ['finishSize' => $totalSize, 'totalSize'=> $this->uploadInfo['total_size'] ];
+           $this->error('分片大小不对', $responseData);
        }
-
+// var_dump($totalSize, $this->uploadInfo['total_size']);exit();
        //合并
        $this->filePath =  FILE_UPLOAD_PATH . date("Ymd") .'/'. $params['uploadId'] . '/';
        $this->fileName = $this->uploadInfo['file_name'];
@@ -261,7 +301,8 @@ class Upload extends Rest
        
         //删除分片文件夹
         del_dir($this->filePath);
-
+        //上传完成不能删除
+        
         $uploadModel = new FileUpload();
         $uploadModel->delUploadId($this->uploadInfo['id']);
 
@@ -296,8 +337,6 @@ class Upload extends Rest
        $this->success($finishPartList);
 
     }
-
-
 
     //列举分片上传事件
     // public function listMultipartUploads($value='')
