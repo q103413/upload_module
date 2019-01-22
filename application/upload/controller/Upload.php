@@ -48,6 +48,13 @@ class Upload extends Rest
         }
 
         $uploadModel = new FileUpload();
+        //校验是否上传成功
+        $checkId = [ 'id'=>$params['uploadId'] ];
+        $uploadInfo = $uploadModel->getUploadInfo($checkId);
+        if ($uploadInfo['status'] != UPLOAD_NO_INFO) {
+            $this->error('上传文件状态不对');
+        }
+        // var_dump($uploadInfo);exit();
 
         $data['user_id']     = $this->userId;
         $data['id']          = $params['uploadId'];
@@ -55,10 +62,9 @@ class Upload extends Rest
         $data['description'] = $params['description'];
         $data['tags']        = $params['tags'];
         $data['stars']       = input('post.stars/s','');;
-        $data['create_time'] = time();
         $data['status']      = UPLOAD_WAIT_VERIFY;
-        // exit();
-        $result = $uploadModel->addUpload($data);
+
+        $result = $uploadModel->editVideoInfo($data);
 
         $this->success();
     }

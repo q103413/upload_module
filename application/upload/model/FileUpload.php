@@ -13,20 +13,27 @@ class FileUpload extends Model
 		return $this->insert($data);
 	}
 
-	public function checkUploadId($data=[])
+	public function checkUploadId($where=[])
 	{
-		return $this->where($data)->value('id');
+		return $this->where($where)->value('id');
 	}
 
-	public function getUploadInfo($data=[])
+	public function getUploadInfo($where=[])
 	{
-		return $this->where($data)->find();
+		$uploadInfo = $this->where($where)->find();
+
+		if (!empty($uploadInfo) ) {
+			return $uploadInfo->toArray();
+		}
+
+		return $uploadInfo;
 	}
 
 	public function changeUploadStatus($uploadId='')
 	{
 		$where ['id'] = $uploadId;
 		$data['status'] = UPLOAD_NO_INFO;
+		$data['finish_time'] = time();
 		return  $this->where($where)->update($data);
 	}
 
@@ -34,6 +41,13 @@ class FileUpload extends Model
 	{
 		$where ['id'] = $uploadId;
 		return $this->where($where)->delete();
+	}
+
+	public function editVideoInfo($data='')
+	{
+		$where ['id'] = $data['id'];
+		// $data['status'] = UPLOAD_NO_INFO;
+		return  $this->where($where)->update($data);
 	}
 
 }
