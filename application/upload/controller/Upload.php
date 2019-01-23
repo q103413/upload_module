@@ -199,7 +199,7 @@ class Upload extends Rest
         $responseData['ETag']       = $data['part_etag'];
         $responseData['partSize']   = $fileByte;
         $responseData['partNumber'] = $partNumber;
-        $responseData['uploadId']   = $uploadId;
+        // $responseData['uploadId']   = $uploadId;
         $this->success($responseData);
     }
 
