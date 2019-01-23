@@ -8,17 +8,15 @@ use think\Validate;
 
 class Upload extends Rest
 {
-    private $fileName; //文件名
-    private $filePath; //上传目录
-    private $tmpPath;  //PHP文件临时目录
+    private $filePath; //文件存储目录
+    private $partFilePath; //分块文件存储目录
     // private $blobNum; //第几个文件块
-    private $uploadInfo; //文件块总数
+    private $uploadInfo; //上传文件信息
 
-    public function __construct($tmpPath='',$blobNum='',$totalBlobNum=''){
+    public function __construct($blobNum='',$totalBlobNum=''){
         parent::__construct();
         //校验uploadId有效性
         $this->checkAuth();
-        // $this->tmpPath =  $tmpPath;
     }
 
     //添加视频信息
@@ -44,23 +42,18 @@ class Upload extends Rest
             $this->error($validate->getError());
         }
 
-        $uploadModel = new FileUpload();
         //校验是否上传成功
-        $checkId = [ 'id'=>$params['uploadId'] ];
-        $uploadInfo = $uploadModel->getUploadInfo($checkId);
-        if ($uploadInfo['status'] >= UPLOAD_WAIT_VERIFY) {
+        if ($this->uploadInfo['status'] >= UPLOAD_WAIT_VERIFY) {
             $this->error('已经添加过视频信息');
         }
-        // var_dump($uploadInfo);exit();
 
-        // $data['user_id']     = $this->userId;
         $data['id']          = $params['uploadId'];
         $data['title']       = $params['title'];
         $data['description'] = $params['description'];
         $data['tags']        = $params['tags'];
         $data['stars']       = input('post.stars/s','');;
         $data['status']      = UPLOAD_WAIT_VERIFY;
-
+        $uploadModel = new FileUpload();
         $result = $uploadModel->editVideoInfo($data);
 
         $this->success();
@@ -99,31 +92,34 @@ class Upload extends Rest
 
         $data['user_id']    = $this->userId;
         $data['file_name']  = $params['fileName'];
-        $uploadId = $uploadModel->checkUploadId($data);
-        if ($uploadId) {
-            $responseData = ['uploadId'=>$uploadId];
-            $this->filePath = FILE_UPLOAD_PATH . date("Ymd") .'/'. $uploadId . '/';
-            $this->touchDir();
+        $uploadInfo = $uploadModel->getUploadInfo($data);
+        // var_dump($uploadInfo);exit();
+        if (!empty($uploadInfo) ) {
+            if ($uploadInfo['status'] >= UPLOAD_FINISH_NO_INFO ) {
+                $this->error('已经上传成功，不能重复上传！');
+            }
+            $responseData = ['uploadId'=>$uploadInfo['id'] ];
+            $partFilePath = $uploadInfo['file_path'] . $uploadInfo['id'] . '/';
+            $this->touchDir($partFilePath);
             $this->success($responseData);
         }
 
         $fileNameNew = md5( time().'_'.$this->userId.'_'.mt_rand(6,12).'_'.$params['fileName']).'.'.$ext;
+        $filePath = FILE_UPLOAD_PATH . date("Ymd") . '/';
         // var_dump( $fileNameNew );exit();
         $data['total_parts']  = $params['totalParts'];
         $data['total_size']   = $params['totalSize'];
         $data['create_time']  = time();
         $data['status']       = UPLOAD_UNFINISHED;
         $data['file_name_new']    = $fileNameNew;
-        $data['file_path']    = FILE_UPLOAD_PATH . date("Ymd") .'/';
+        $data['file_path']    = $filePath;
         // var_dump($data );exit();
-        // exit();
         $result = $uploadModel->addUpload($data);
     	//开辟缓存
         if ($result) {
             //创建文件夹
-            // var_dump()
-            $this->filePath = FILE_UPLOAD_PATH . date("Ymd") .'/'. $uploadModel->getLastInsID() . '/';
-            $this->touchDir();
+            $partFilePath = $filePath . $uploadModel->getLastInsID() . '/';
+            $this->touchDir($partFilePath);
 
             $responseData = ['uploadId'=>$uploadModel->getLastInsID()];
             $this->success($responseData);
@@ -140,7 +136,6 @@ class Upload extends Rest
     public function uploadPart($value='')
     {
         $params = input('post.');
-// var_dump($this->userId );exit();
         $validate = new Validate([
             'uploadId'          => 'require|integer',
             'partNumber'          => 'require|integer',
@@ -157,30 +152,21 @@ class Upload extends Rest
         
         $uploadId = $params['uploadId'];
         $partNumber = $params['partNumber'];
-// var_dump($_FILES['file']['tmp_name']);exit();
         if (empty($_FILES['file']['tmp_name']) ) {
             $this->error('上传分片不能为空');
         }
 
        $tmpPath = $_FILES['file']['tmp_name'];
-        // var_dump($tmpPath);
 
-        $this->filePath =  FILE_UPLOAD_PATH . date("Ymd") .'/'. $this->uploadInfo['id'] . '/';
+        $partFileName = $this->partFilePath . $this->uploadInfo['file_name_new'].'__'.$partNumber;
 
-        if(!file_exists($this->filePath) )
-        {
-           $this->error('上传错误,请先初始化');
-        }
-
-        $this->fileName = $this->filePath . $this->uploadInfo['file_name_new'].'__'.$partNumber;
-        // var_dump($this->fileName);exit();
         $fileByte = filesize($tmpPath);
-        move_uploaded_file($tmpPath, $this->fileName);
+        move_uploaded_file($tmpPath, $partFileName);
 
         $data['upload_id'] = $uploadId;
         $data['part_number']   = $partNumber;
         $data['part_size']   = $fileByte;
-        $data['part_etag']   = md5_file($this->fileName);
+        $data['part_etag']   = md5_file($partFileName);
         $data['create_time']   = time();
         $data['status']   = UPLOAD_UNFINISHED;
 
@@ -195,7 +181,6 @@ class Upload extends Rest
             $this->error('分片上传失败');
         }
 
-        // $responseData['partNumber']   = $partNumber;
         $responseData['ETag']       = $data['part_etag'];
         $responseData['partSize']   = $fileByte;
         $responseData['partNumber'] = $partNumber;
@@ -250,27 +235,29 @@ class Upload extends Rest
        }
 // var_dump($totalSize, $this->uploadInfo['total_size']);exit();
        //合并
-       $this->filePath =  FILE_UPLOAD_PATH . date("Ymd") .'/'. $params['uploadId'] . '/';
-       $this->fileName = $this->uploadInfo['file_name_new'];
+       // $this->filePath =  FILE_UPLOAD_PATH . date("Ymd") .'/'. $params['uploadId'] . '/';
+       // $this->fileName = $this->uploadInfo['file_name_new'];
+
+
+       // if(!file_exists($this->filePath) )
+       // {
+       //    $this->error('请先初始化');
+       // }
+       $fileName = $this->filePath . $this->uploadInfo['file_name_new'];
 
        $blob = '';
        foreach ($finishPartNumber as $key => $number) {
-            $blob .= file_get_contents($this->filePath.'/'. $this->fileName.'__'.$number);
+            $partFileName = $this->partFilePath . $this->uploadInfo['file_name_new'].'__'.$number;
+            $blob .= file_get_contents($partFileName);
        }
-       file_put_contents( FILE_UPLOAD_PATH . date("Ymd").'/'. $this->fileName,$blob);
+       file_put_contents( $fileName, $blob);
+       // var_dump( $fileName );exit();
        //删除合并后的分片
        $uploadModel = new FileUpload();
        $uploadModel->changeUploadStatus($this->uploadInfo['id']);
-       del_dir($this->filePath);
+       del_dir($this->partFilePath);
        $delFileParts  = $fileUploadParts->delFileParts($this->uploadInfo['id']);
        $this->success();
-
-    	// $byte = filesize($tmpPath);
-     //    $kb = round($byte / 1024, 2);
-     //    if ($kb<100) {
-     //        $this->error('上传分片不能小于100k');
-     //    }
-        // echo $byte,'qq',$kb;exit();
 
     }
 
@@ -287,6 +274,14 @@ class Upload extends Rest
             $this->error('无效的uplaodId');
         }elseif ($uploadInfo['user_id'] != $this->userId) {
             $this->error('用户与当前uploadId不对应');
+        }
+
+        $this->filePath = $uploadInfo['file_path'];
+        $this->partFilePath = $uploadInfo['file_path'].$uploadInfo['id'].'/';
+
+        if(!file_exists($this->filePath) )
+        {
+           $this->error('上传错误,请先初始化');
         }
 
         $this->uploadInfo = $uploadInfo;
@@ -308,11 +303,9 @@ class Upload extends Rest
         if (!$validate->check($params)) {
             $this->error($validate->getError());
         }
-
-        $this->filePath =  FILE_UPLOAD_PATH . date("Ymd") .'/'. $this->uploadInfo['id'] . '/';
        
         //删除分片文件夹
-        del_dir($this->filePath);
+        del_dir($this->partFilePath);
         //上传完成不能删除
         
         $uploadModel = new FileUpload();
@@ -349,20 +342,19 @@ class Upload extends Rest
 
     }
 
+    //建立上传文件夹
+    private function touchDir($filePath){
+        // var_dump( $this->filePath );exit();
+        if(!file_exists($filePath)){
+            // var_dump($filePath);exit();
+            return mkdir($filePath,0777,true);
+        }
+    }
     //列举分片上传事件
     // public function listMultipartUploads($value='')
     // {
-    // 	# code...
+    //  # code...
     // }
-
-    //建立上传文件夹
-    private function touchDir(){
-        // var_dump( $this->filePath );exit();
-        if(!file_exists($this->filePath)){
-            // var_dump($this->filePath);exit();
-            return mkdir($this->filePath,0777,true);
-        }
-    }
 
     public function mergeUploadParts($value='')
     {
