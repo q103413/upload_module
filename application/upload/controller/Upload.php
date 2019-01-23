@@ -222,13 +222,18 @@ class Upload extends Rest
             $this->error($validate->getError());
         }
 
+        //校验上传信息
+        if ($this->uploadInfo['status'] >= UPLOAD_FINISH_NO_INFO ) {
+            $this->error('已经合并过');
+        }
+
         //校验列表
         $fileUploadParts = new FileUploadParts();
         $finishPartInfo  = $fileUploadParts->getPartsInfo($this->uploadInfo['id']);
         $finishTotalParts = $finishPartInfo['totalParts'];
         $totalSize = $finishPartInfo['totalSize'];
 
-        $finishPartList  = $fileUploadParts->getPartList($this->uploadInfo['id']);
+        $finishPartList  = $fileUploadParts->checkPartList($this->uploadInfo['id']);
         $finishPartNumber = array_keys($finishPartList);
         $missParts = find_miss($finishPartNumber, $this->uploadInfo['total_parts']);
         if (!empty($missParts) ) {
@@ -334,12 +339,11 @@ class Upload extends Rest
            $this->error($validate->getError());
        }
 
-       //校验列表
        $fileUploadParts = new FileUploadParts();
        $finishPartList  = $fileUploadParts->getPartList($this->uploadInfo['id']);
        
-       $responseData = ['ListPartsResult'=>$finishPartList];
-       $this->success($finishPartList);
+       $responseData = ['finishPartList'=>$finishPartList];
+       $this->success($responseData);
 
     }
 
@@ -374,6 +378,10 @@ class Upload extends Rest
         if (!$validate->check($params)) {
             $this->error($validate->getError());
         }
+        //校验上传信息
+        if ($this->uploadInfo['status'] >= UPLOAD_FINISH_NO_INFO ) {
+            $this->error('已经合并过');
+        }
 
         //校验列表
         $fileUploadParts = new FileUploadParts();
@@ -381,7 +389,7 @@ class Upload extends Rest
         $finishTotalParts = $finishPartInfo['totalParts'];
         $totalSize = $finishPartInfo['totalSize'];
 
-        $finishPartList  = $fileUploadParts->getPartList($this->uploadInfo['id']);
+        $finishPartList  = $fileUploadParts->checkPartList($this->uploadInfo['id']);
         $finishPartNumber = array_keys($finishPartList);
         $missParts = find_miss($finishPartNumber, $this->uploadInfo['total_parts']);
         if (!empty($missParts) ) {

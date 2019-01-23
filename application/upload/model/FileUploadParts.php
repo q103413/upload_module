@@ -28,10 +28,18 @@ class FileUploadParts extends Model
 	
 	}
 
-	public function getPartList($uploadId='')
+	public function checkPartList($uploadId='')
 	{
 		$fields = 'part_number as partNumber, part_size as partSize';
 		$res = $this->where(['upload_id'=>$uploadId])->column($fields);
+
+		return $res;
+	}
+
+	public function getPartList($uploadId='')
+	{
+		$fields = 'part_number as partNumber, part_etag as ETag, part_size as partSize';
+		$res = $this->where(['upload_id'=>$uploadId])->field($fields)->select();
 
 		return $res;
 	}
