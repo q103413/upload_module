@@ -101,6 +101,7 @@ class Upload extends Rest
             $responseData = ['uploadId'=>$uploadInfo['id'] ];
             $partFilePath = $uploadInfo['file_path'] . $uploadInfo['id'] . '/';
             $this->touchDir($partFilePath);
+   
             $this->success($responseData);
         }
 
@@ -244,13 +245,16 @@ class Upload extends Rest
        //    $this->error('请先初始化');
        // }
        $fileName = $this->filePath . $this->uploadInfo['file_name_new'];
-
-       $blob = '';
-       foreach ($finishPartNumber as $key => $number) {
-            $partFileName = $this->partFilePath . $this->uploadInfo['file_name_new'].'__'.$number;
-            $blob .= file_get_contents($partFileName);
+       try {
+           $blob = '';
+           foreach ($finishPartNumber as $key => $number) {
+                $partFileName = $this->partFilePath . $this->uploadInfo['file_name_new'].'__'.$number;
+                $blob .= file_get_contents($partFileName);
+           }
+           file_put_contents( $fileName, $blob);
+       } catch (\Exception $e) {
+           $this->error('文件合成失败');
        }
-       file_put_contents( $fileName, $blob);
        // var_dump( $fileName );exit();
        //删除合并后的分片
        $uploadModel = new FileUpload();
@@ -346,8 +350,12 @@ class Upload extends Rest
     private function touchDir($filePath){
         // var_dump( $this->filePath );exit();
         if(!file_exists($filePath)){
-            // var_dump($filePath);exit();
-            return mkdir($filePath,0777,true);
+            try {
+               mkdir($filePath,0777,true);
+            } catch (\Exception $e) {
+                $this->error('初始化文件夹失败');
+            }
+             
         }
     }
     //列举分片上传事件
